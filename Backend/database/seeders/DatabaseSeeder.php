@@ -21,6 +21,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create super admin user
+        $superAdmin = User::create([
+            'name' => 'Andrew McDowell',
+            'email' => 'lockedincsoftware@gmail.com',
+            'password' => Hash::make('LockedIn247@alltimes'),
+            'is_super_admin' => true,
+            'email_verified_at' => now(),
+        ]);
+
         // Create 1 org
         $org = Org::create([
             'name' => 'QuickReceipt Corp',
