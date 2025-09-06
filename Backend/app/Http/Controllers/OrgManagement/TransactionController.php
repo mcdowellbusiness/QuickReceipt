@@ -4,8 +4,8 @@ namespace App\Http\Controllers\OrgManagement;
 
 use App\Exceptions\TeamException;
 use App\Http\Controllers\Controller;
+use App\Models\Budget;
 use App\Models\Transaction;
-use App\Models\Team;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,16 +20,15 @@ class TransactionController extends Controller
     }
 
     /**
-     * List transactions for a team
+     * List transactions for a budget
      */
-    public function index(Request $request, Team $team)
+    public function index(Request $request, Budget $budget)
     {
         try {
             $user = Auth::user();
             
             // Get filters from request
             $filters = $request->only([
-                'budget_id',
                 'category_id', 
                 'type',
                 'date_from',
@@ -37,7 +36,7 @@ class TransactionController extends Controller
                 'vendor'
             ]);
 
-            $transactions = $this->transactionService->getTeamTransactions($user, $team, $filters);
+            $transactions = $this->transactionService->getBudgetTransactions($user, $budget, $filters);
 
             return response()->json($transactions);
         } catch (TeamException $e) {
@@ -50,12 +49,12 @@ class TransactionController extends Controller
     /**
      * Show a specific transaction
      */
-    public function show(Team $team, Transaction $transaction)
+    public function show(Budget $budget, Transaction $transaction)
     {
         try {
             $user = Auth::user();
             
-            $transaction = $this->transactionService->getTransaction($user, $team, $transaction);
+            $transaction = $this->transactionService->getTransaction($user, $budget, $transaction);
 
             return response()->json($transaction);
         } catch (TeamException $e) {
@@ -68,7 +67,7 @@ class TransactionController extends Controller
     /**
      * Create a new transaction
      */
-    public function store(Request $request, Team $team)
+    public function store(Request $request, Budget $budget)
     {
         try {
             $user = Auth::user();
@@ -77,7 +76,7 @@ class TransactionController extends Controller
             $validatedData = $this->transactionService->validateTransactionData($request->all());
             
             // Create the transaction using the service
-            $transaction = $this->transactionService->createTransaction($user, $team, $validatedData);
+            $transaction = $this->transactionService->createTransaction($user, $budget, $validatedData);
 
             return response()->json([
                 'message' => 'Transaction created successfully',
@@ -93,7 +92,7 @@ class TransactionController extends Controller
     /**
      * Update a transaction
      */
-    public function update(Request $request, Team $team, Transaction $transaction)
+    public function update(Request $request, Budget $budget, Transaction $transaction)
     {
         try {
             $user = Auth::user();
@@ -102,7 +101,7 @@ class TransactionController extends Controller
             $validatedData = $this->transactionService->validateTransactionData($request->all(), true);
             
             // Update the transaction using the service
-            $updatedTransaction = $this->transactionService->updateTransaction($user, $team, $transaction, $validatedData);
+            $updatedTransaction = $this->transactionService->updateTransaction($user, $budget, $transaction, $validatedData);
 
             return response()->json([
                 'message' => 'Transaction updated successfully',
@@ -118,13 +117,13 @@ class TransactionController extends Controller
     /**
      * Delete a transaction
      */
-    public function destroy(Team $team, Transaction $transaction)
+    public function destroy(Budget $budget, Transaction $transaction)
     {
         try {
             $user = Auth::user();
             
             // Delete the transaction using the service
-            $this->transactionService->deleteTransaction($user, $team, $transaction);
+            $this->transactionService->deleteTransaction($user, $budget, $transaction);
 
             return response()->json([
                 'message' => 'Transaction deleted successfully'

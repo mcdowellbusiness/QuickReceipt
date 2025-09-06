@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Exceptions\TeamException;
+use App\Models\Budget;
 use App\Models\Transaction;
-use App\Models\Team;
 use App\Models\User;
 use App\Services\AuthorizationService;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,26 +23,22 @@ class TransactionService
     /**
      * Get transactions for a team (filtered by user permissions)
      */
-    public function getTeamTransactions(User $user, Team $team, array $filters = []): Collection
+    public function getBudgetTransactions(User $user, Budget $budget, array $filters = []): Collection
     {
-        // Check if user has access to this team
-        if (!$this->authService->hasTeamAccess($user, $team)) {
-            throw new TeamException('You do not have access to this team', 403);
+        // Check if user has access to this budget's team
+        if (!$this->authService->hasTeamAccess($user, $budget->team)) {
+            throw new TeamException('You do not have access to this budget', 403);
         }
 
-        $query = Transaction::where('team_id', $team->id)
+        $query = Transaction::where('budget_id', $budget->id)
             ->with(['user', 'category', 'budget', 'receipt']);
 
         // If user is not admin, only show their own transactions
-        if (!$this->canManageTransactions($user, $team)) {
+        if (!$this->canManageTransactions($user, $budget->team)) {
             $query->where('user_id', $user->id);
         }
 
         // Apply filters
-        if (isset($filters['budget_id'])) {
-            $query->where('budget_id', $filters['budget_id']);
-        }
-
         if (isset($filters['category_id'])) {
             $query->where('category_id', $filters['category_id']);
         }
@@ -71,20 +67,20 @@ class TransactionService
     /**
      * Get a specific transaction
      */
-    public function getTransaction(User $user, Team $team, Transaction $transaction): Transaction
+    public function getTransaction(User $user, Budget $budget, Transaction $transaction): Transaction
     {
-        // Check if user has access to this team
-        if (!$this->authService->hasTeamAccess($user, $team)) {
-            throw new TeamException('You do not have access to this team', 403);
+        // Check if user has access to this budget's team
+        if (!$this->authService->hasTeamAccess($user, $budget->team)) {
+            throw new TeamException('You do not have access to this budget', 403);
         }
 
-        // Verify transaction belongs to team
-        if ($transaction->team_id !== $team->id) {
-            throw new TeamException('Transaction does not belong to this team', 404);
+        // Verify transaction belongs to budget
+        if ($transaction->budget_id !== $budget->id) {
+            throw new TeamException('Transaction does not belong to this budget', 404);
         }
 
         // Check if user can view this transaction
-        if (!$this->canViewTransaction($user, $team, $transaction)) {
+        if (!$this->canViewTransaction($user, $budget->team, $transaction)) {
             throw new TeamException('You can only view your own transactions', 403);
         }
 
@@ -94,28 +90,20 @@ class TransactionService
     /**
      * Create a new transaction
      */
-    public function createTransaction(User $user, Team $team, array $data): Transaction
+    public function createTransaction(User $user, Budget $budget, array $data): Transaction
     {
-        // Check if user has access to this team
-        if (!$this->authService->hasTeamAccess($user, $team)) {
-            throw new TeamException('You do not have access to this team', 403);
+        // Check if user has access to this budget's team
+        if (!$this->authService->hasTeamAccess($user, $budget->team)) {
+            throw new TeamException('You do not have access to this budget', 403);
         }
 
-        // Verify budget belongs to team
-        if (isset($data['budget_id'])) {
-            $budget = \App\Models\Budget::where('id', $data['budget_id'])
-                ->where('team_id', $team->id)
-                ->first();
-            
-            if (!$budget) {
-                throw new TeamException('Budget does not belong to this team', 404);
-            }
-        }
+        // Set budget_id from the budget parameter
+        $data['budget_id'] = $budget->id;
 
-        // Verify category belongs to team's org
+        // Verify category belongs to budget's team's org
         if (isset($data['category_id'])) {
             $category = \App\Models\Category::where('id', $data['category_id'])
-                ->where('org_id', $team->org_id)
+                ->where('org_id', $budget->team->org_id)
                 ->first();
             
             if (!$category) {
@@ -123,13 +111,13 @@ class TransactionService
             }
         }
 
-        return DB::transaction(function () use ($user, $team, $data) {
+        return DB::transaction(function () use ($user, $budget, $data) {
             // Generate unique reference code
             $referenceCode = $this->generateReferenceCode();
 
             return Transaction::create([
-                'org_id' => $team->org_id,
-                'team_id' => $team->id,
+                'org_id' => $budget->team->org_id,
+                'team_id' => $budget->team->id,
                 'budget_id' => $data['budget_id'],
                 'user_id' => $user->id,
                 'type' => $data['type'],
@@ -148,38 +136,30 @@ class TransactionService
     /**
      * Update a transaction
      */
-    public function updateTransaction(User $user, Team $team, Transaction $transaction, array $data): Transaction
+    public function updateTransaction(User $user, Budget $budget, Transaction $transaction, array $data): Transaction
     {
-        // Check if user has access to this team
-        if (!$this->authService->hasTeamAccess($user, $team)) {
-            throw new TeamException('You do not have access to this team', 403);
+        // Check if user has access to this budget's team
+        if (!$this->authService->hasTeamAccess($user, $budget->team)) {
+            throw new TeamException('You do not have access to this budget', 403);
         }
 
-        // Verify transaction belongs to team
-        if ($transaction->team_id !== $team->id) {
-            throw new TeamException('Transaction does not belong to this team', 404);
+        // Verify transaction belongs to budget
+        if ($transaction->budget_id !== $budget->id) {
+            throw new TeamException('Transaction does not belong to this budget', 404);
         }
 
         // Check if user can edit this transaction
-        if (!$this->canEditTransaction($user, $team, $transaction)) {
+        if (!$this->canEditTransaction($user, $budget->team, $transaction)) {
             throw new TeamException('You can only edit your own transactions', 403);
         }
 
-        // Verify budget belongs to team if updating
-        if (isset($data['budget_id'])) {
-            $budget = \App\Models\Budget::where('id', $data['budget_id'])
-                ->where('team_id', $team->id)
-                ->first();
-            
-            if (!$budget) {
-                throw new TeamException('Budget does not belong to this team', 404);
-            }
-        }
+        // Ensure budget_id stays the same
+        $data['budget_id'] = $budget->id;
 
-        // Verify category belongs to team's org if updating
+        // Verify category belongs to budget's team's org if updating
         if (isset($data['category_id'])) {
             $category = \App\Models\Category::where('id', $data['category_id'])
-                ->where('org_id', $team->org_id)
+                ->where('org_id', $budget->team->org_id)
                 ->first();
             
             if (!$category) {
@@ -224,20 +204,20 @@ class TransactionService
     /**
      * Delete a transaction
      */
-    public function deleteTransaction(User $user, Team $team, Transaction $transaction): bool
+    public function deleteTransaction(User $user, Budget $budget, Transaction $transaction): bool
     {
-        // Check if user has access to this team
-        if (!$this->authService->hasTeamAccess($user, $team)) {
-            throw new TeamException('You do not have access to this team', 403);
+        // Check if user has access to this budget's team
+        if (!$this->authService->hasTeamAccess($user, $budget->team)) {
+            throw new TeamException('You do not have access to this budget', 403);
         }
 
-        // Verify transaction belongs to team
-        if ($transaction->team_id !== $team->id) {
-            throw new TeamException('Transaction does not belong to this team', 404);
+        // Verify transaction belongs to budget
+        if ($transaction->budget_id !== $budget->id) {
+            throw new TeamException('Transaction does not belong to this budget', 404);
         }
 
         // Check if user can delete this transaction
-        if (!$this->canEditTransaction($user, $team, $transaction)) {
+        if (!$this->canEditTransaction($user, $budget->team, $transaction)) {
             throw new TeamException('You can only delete your own transactions', 403);
         }
 
@@ -247,7 +227,7 @@ class TransactionService
     /**
      * Check if user can manage transactions (team admin or org admin)
      */
-    private function canManageTransactions(User $user, Team $team): bool
+    private function canManageTransactions(User $user, \App\Models\Team $team): bool
     {
         return $this->authService->canManageBudgets($user, $team);
     }
@@ -255,7 +235,7 @@ class TransactionService
     /**
      * Check if user can view a specific transaction
      */
-    private function canViewTransaction(User $user, Team $team, Transaction $transaction): bool
+    private function canViewTransaction(User $user, \App\Models\Team $team, Transaction $transaction): bool
     {
         // Admins can view all transactions
         if ($this->canManageTransactions($user, $team)) {
@@ -269,7 +249,7 @@ class TransactionService
     /**
      * Check if user can edit a specific transaction
      */
-    private function canEditTransaction(User $user, Team $team, Transaction $transaction): bool
+    private function canEditTransaction(User $user, \App\Models\Team $team, Transaction $transaction): bool
     {
         // Admins can edit all transactions
         if ($this->canManageTransactions($user, $team)) {
@@ -306,7 +286,6 @@ class TransactionService
     public function validateTransactionData(array $data, bool $isUpdate = false): array
     {
         $rules = [
-            'budget_id' => $isUpdate ? 'sometimes|required|exists:budgets,id' : 'required|exists:budgets,id',
             'type' => $isUpdate ? 'sometimes|required|in:expense,income' : 'required|in:expense,income',
             'amount' => $isUpdate ? 'sometimes|required|numeric|min:0' : 'required|numeric|min:0',
             'date' => $isUpdate ? 'sometimes|required|date' : 'required|date',

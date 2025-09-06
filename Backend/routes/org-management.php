@@ -17,13 +17,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::apiResource('budgets', BudgetController::class);
         Route::patch('budgets/{budget}/toggle-status', [BudgetController::class, 'toggleStatus']);
         Route::get('budgets/{budget}/summary', [BudgetController::class, 'summary']);
-        
-        // Transaction management
-        Route::apiResource('transactions', TransactionController::class);
     });
     
-    // Receipt management (scoped to budget)
+    // Transaction and Receipt management (scoped to budget)
     Route::prefix('budgets/{budget}')->group(function () {
+        // Transaction management
+        Route::apiResource('transactions', TransactionController::class);
+        
+        // Receipt management
         Route::apiResource('receipts', ReceiptController::class)->except(['store', 'update']);
         Route::post('receipts/upload', [ReceiptController::class, 'upload']);
         Route::put('receipts/{receipt}/replace', [ReceiptController::class, 'replace']);
