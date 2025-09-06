@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\OrgManagement\BudgetController;
+use App\Http\Controllers\OrgManagement\LeadOnboardingController;
 use App\Http\Controllers\OrgManagement\ReceiptController;
 use App\Http\Controllers\OrgManagement\TeamController;
 use App\Http\Controllers\OrgManagement\TransactionController;
@@ -11,6 +12,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // Team management
     Route::apiResource('teams', TeamController::class);
+    
+    // Lead onboarding
+    Route::post('leads/invite', [LeadOnboardingController::class, 'inviteTeamLead']);
     
     // Budget management
     Route::prefix('teams/{team}')->group(function () {

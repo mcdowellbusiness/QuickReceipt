@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\FileController;
+use App\Notifications\TestEmailNotification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -25,4 +27,26 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/files/{fileId}', [FileController::class, 'delete']);
     Route::get('/files/{fileId}/url', [FileController::class, 'getUrl']);
     Route::get('/files/{fileId}', [FileController::class, 'show']);
+});
+
+// Test email route (remove in production)
+Route::post('/test-email', function (Request $request) {
+    $email = $request->input('email');
+    
+    if (!$email) {
+        return response()->json(['error' => 'Email address is required'], 400);
+    }
+    
+    // Create a temporary user instance for the notification
+    $user = new User();
+    $user->email = $email;
+    $user->name = 'Test User';
+    
+    // Send the test notification
+    $user->notify(new TestEmailNotification());
+    
+    return response()->json([
+        'message' => 'Test email sent successfully to ' . $email,
+        'timestamp' => now()
+    ]);
 });
