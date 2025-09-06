@@ -127,19 +127,23 @@ class BudgetController extends Controller
     }
 
     /**
-     * Archive a budget
+     * Toggle budget status between active and archived
      */
-    public function archive(Team $team, Budget $budget)
+    public function toggleStatus(Team $team, Budget $budget)
     {
         try {
             $user = Auth::user();
             
-            // Archive the budget using the service
-            $archivedBudget = $this->budgetService->archiveBudget($user, $team, $budget);
+            // Toggle the budget status using the service
+            $updatedBudget = $this->budgetService->toggleBudgetStatus($user, $team, $budget);
+
+            $statusMessage = $updatedBudget->status === 'active' 
+                ? 'Budget activated successfully' 
+                : 'Budget archived successfully';
 
             return response()->json([
-                'message' => 'Budget archived successfully',
-                'budget' => $archivedBudget,
+                'message' => $statusMessage,
+                'budget' => $updatedBudget,
             ]);
         } catch (TeamException $e) {
             return response()->json([

@@ -117,17 +117,22 @@ class BudgetService
             throw new TeamException('Budget does not belong to this team', 404);
         }
 
+        // Check if budget has transactions
+        if ($budget->transactions()->exists()) {
+            throw new TeamException('Cannot delete budget with existing transactions. Archive it instead.', 400);
+        }
+
         return $budget->delete();
     }
 
     /**
-     * Archive a budget
+     * Toggle budget status between active and archived
      */
-    public function archiveBudget(User $user, Team $team, Budget $budget): Budget
+    public function toggleBudgetStatus(User $user, Team $team, Budget $budget): Budget
     {
         // Check if user can manage budgets
         if (!$this->authService->canManageBudgets($user, $team)) {
-            throw new TeamException('You must be a team admin or organization admin to archive budgets', 403);
+            throw new TeamException('You must be a team admin or organization admin to manage budget status', 403);
         }
 
         // Verify budget belongs to team
@@ -135,7 +140,10 @@ class BudgetService
             throw new TeamException('Budget does not belong to this team', 404);
         }
 
-        $budget->update(['status' => 'archived']);
+        // Toggle status
+        $newStatus = $budget->status === 'active' ? 'archived' : 'active';
+        $budget->update(['status' => $newStatus]);
+        
         return $budget;
     }
 

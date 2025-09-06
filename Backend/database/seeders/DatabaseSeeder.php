@@ -134,11 +134,13 @@ class DatabaseSeeder extends Seeder
         
         foreach ($categories as $categoryName) {
             Category::create([
+                'org_id' => $org->id,
                 'budget_id' => $salesBudget->id,
                 'name' => $categoryName,
             ]);
 
             Category::create([
+                'org_id' => $org->id,
                 'budget_id' => $devBudget->id,
                 'name' => $categoryName,
             ]);
