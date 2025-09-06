@@ -20,8 +20,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         
         // Transaction management
         Route::apiResource('transactions', TransactionController::class);
-        
-        // Receipt management
+    });
+    
+    // Receipt management (scoped to budget)
+    Route::prefix('budgets/{budget}')->group(function () {
         Route::apiResource('receipts', ReceiptController::class)->except(['store', 'update']);
         Route::post('receipts/upload', [ReceiptController::class, 'upload']);
         Route::put('receipts/{receipt}/replace', [ReceiptController::class, 'replace']);

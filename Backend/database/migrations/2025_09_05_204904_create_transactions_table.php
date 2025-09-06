@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('team_id')->constrained()->cascadeOnDelete();
             $table->foreignId('budget_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('receipt_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->unsignedBigInteger('receipt_id')->nullable();
             $table->enum('type', ['expense','income']);
             $table->unsignedBigInteger('amount_cents');
             $table->date('date');

@@ -4,8 +4,8 @@ namespace App\Http\Controllers\OrgManagement;
 
 use App\Exceptions\TeamException;
 use App\Http\Controllers\Controller;
+use App\Models\Budget;
 use App\Models\Receipt;
-use App\Models\Team;
 use App\Models\Transaction;
 use App\Services\ReceiptService;
 use Illuminate\Http\Request;
@@ -21,9 +21,9 @@ class ReceiptController extends Controller
     }
 
     /**
-     * List receipts for a team
+     * List receipts for a budget
      */
-    public function index(Request $request, Team $team)
+    public function index(Request $request, Budget $budget)
     {
         try {
             $user = Auth::user();
@@ -34,7 +34,7 @@ class ReceiptController extends Controller
                 'has_receipt'
             ]);
 
-            $receipts = $this->receiptService->getTeamReceipts($user, $team, $filters);
+            $receipts = $this->receiptService->getBudgetReceipts($user, $budget, $filters);
 
             return response()->json($receipts);
         } catch (TeamException $e) {
@@ -47,12 +47,12 @@ class ReceiptController extends Controller
     /**
      * Show a specific receipt
      */
-    public function show(Team $team, Receipt $receipt)
+    public function show(Budget $budget, Receipt $receipt)
     {
         try {
             $user = Auth::user();
             
-            $receipt = $this->receiptService->getReceipt($user, $team, $receipt);
+            $receipt = $this->receiptService->getReceipt($user, $budget, $receipt);
 
             return response()->json([
                 'receipt' => $receipt,
@@ -68,7 +68,7 @@ class ReceiptController extends Controller
     /**
      * Upload a receipt
      */
-    public function upload(Request $request, Team $team)
+    public function upload(Request $request, Budget $budget)
     {
         try {
             $user = Auth::user();
@@ -77,7 +77,7 @@ class ReceiptController extends Controller
                 'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             ]);
 
-            $receipt = $this->receiptService->uploadReceipt($user, $team, $request->file('file'));
+            $receipt = $this->receiptService->uploadReceipt($user, $budget, $request->file('file'));
 
             return response()->json([
                 'message' => 'Receipt uploaded successfully',
@@ -94,7 +94,7 @@ class ReceiptController extends Controller
     /**
      * Replace a receipt
      */
-    public function replace(Request $request, Team $team, Receipt $receipt)
+    public function replace(Request $request, Budget $budget, Receipt $receipt)
     {
         try {
             $user = Auth::user();
@@ -103,7 +103,7 @@ class ReceiptController extends Controller
                 'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             ]);
 
-            $receipt = $this->receiptService->replaceReceipt($user, $team, $receipt, $request->file('file'));
+            $receipt = $this->receiptService->replaceReceipt($user, $budget, $receipt, $request->file('file'));
 
             return response()->json([
                 'message' => 'Receipt replaced successfully',
@@ -120,12 +120,12 @@ class ReceiptController extends Controller
     /**
      * Delete a receipt
      */
-    public function destroy(Team $team, Receipt $receipt)
+    public function destroy(Budget $budget, Receipt $receipt)
     {
         try {
             $user = Auth::user();
             
-            $this->receiptService->deleteReceipt($user, $team, $receipt);
+            $this->receiptService->deleteReceipt($user, $budget, $receipt);
 
             return response()->json([
                 'message' => 'Receipt deleted successfully'
@@ -140,12 +140,12 @@ class ReceiptController extends Controller
     /**
      * Get receipt URL
      */
-    public function url(Team $team, Receipt $receipt)
+    public function url(Budget $budget, Receipt $receipt)
     {
         try {
             $user = Auth::user();
             
-            $url = $this->receiptService->getReceiptUrl($user, $team, $receipt);
+            $url = $this->receiptService->getReceiptUrl($user, $budget, $receipt);
 
             return response()->json([
                 'url' => $url

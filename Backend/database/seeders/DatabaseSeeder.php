@@ -220,23 +220,32 @@ class DatabaseSeeder extends Seeder
             Transaction::create($transactionData);
         }
 
-        // Create sample receipts first
-        $receipt1 = Receipt::create([
-            'disk' => 'public',
+        // Create sample files first
+        $file1 = \App\Models\File::create([
             'path' => 'receipts/office-depot-001.pdf',
-            'original_filename' => 'office-depot-receipt.pdf',
-            'mime_type' => 'application/pdf',
-            'size_bytes' => 245760,
-            'checksum' => 'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456',
+            'name' => 'office-depot-receipt.pdf',
+            'mimetype' => 'application/pdf',
+            'size' => 245760,
+            'disk' => 'public',
+        ]);
+
+        $file3 = \App\Models\File::create([
+            'path' => 'receipts/apple-store-001.pdf',
+            'name' => 'apple-store-receipt.pdf',
+            'mimetype' => 'application/pdf',
+            'size' => 189440,
+            'disk' => 'public',
+        ]);
+
+        // Create sample receipts
+        $receipt1 = Receipt::create([
+            'budget_id' => 1, // TXN-000001 is budget 1
+            'file_id' => $file1->id,
         ]);
 
         $receipt3 = Receipt::create([
-            'disk' => 'public',
-            'path' => 'receipts/apple-store-001.pdf',
-            'original_filename' => 'apple-store-receipt.pdf',
-            'mime_type' => 'application/pdf',
-            'size_bytes' => 189440,
-            'checksum' => 'b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567',
+            'budget_id' => 2, // TXN-000003 is budget 2
+            'file_id' => $file3->id,
         ]);
 
         // Update transactions to link to receipts

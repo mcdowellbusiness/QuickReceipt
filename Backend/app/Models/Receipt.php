@@ -3,23 +3,26 @@
 namespace App\Models;
 
 use App\Contracts\FileStorageService;
+use App\Models\Budget;
 use App\Models\File;
 use Illuminate\Database\Eloquent\Model;
 
 class Receipt extends Model
 {
     protected $fillable = [
-        'disk',
-        'path',
-        'original_filename',
-        'mime_type',
-        'size_bytes',
-        'checksum',
+        'budget_id',
+        'file_id',
     ];
 
-    protected $casts = [
-        'size_bytes' => 'integer',
-    ];
+    public function budget()
+    {
+        return $this->belongsTo(Budget::class);
+    }
+
+    public function file()
+    {
+        return $this->belongsTo(File::class);
+    }
 
     public function transaction()
     {
@@ -31,14 +34,7 @@ class Receipt extends Model
      */
     public function getSizeFormattedAttribute(): string
     {
-        $bytes = $this->size_bytes;
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
-            $bytes /= 1024;
-        }
-        
-        return round($bytes, 2) . ' ' . $units[$i];
+        return $this->file?->size_formatted ?? '0 B';
     }
 
     /**
@@ -46,7 +42,7 @@ class Receipt extends Model
      */
     public function getExtensionAttribute(): string
     {
-        return pathinfo($this->original_filename, PATHINFO_EXTENSION);
+        return $this->file?->extension ?? '';
     }
 
     /**
@@ -54,7 +50,7 @@ class Receipt extends Model
      */
     public function isImage(): bool
     {
-        return str_starts_with($this->mime_type, 'image/');
+        return $this->file?->isImage() ?? false;
     }
 
     /**
@@ -62,7 +58,7 @@ class Receipt extends Model
      */
     public function isPdf(): bool
     {
-        return $this->mime_type === 'application/pdf';
+        return $this->file?->isPdf() ?? false;
     }
 
     /**
@@ -70,17 +66,12 @@ class Receipt extends Model
      */
     public function getUrl(): ?string
     {
-        if (!$this->path) {
+        if (!$this->file) {
             return null;
         }
 
         try {
-            $fileRecord = File::where('path', $this->path)->first();
-            if (!$fileRecord) {
-                return null;
-            }
-
-            return app(FileStorageService::class)->getUrl($fileRecord->id);
+            return app(FileStorageService::class)->getUrl($this->file->id);
         } catch (\Exception $e) {
             return null;
         }
