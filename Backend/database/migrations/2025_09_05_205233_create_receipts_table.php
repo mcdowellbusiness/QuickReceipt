@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('receipts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('transaction_id')->constrained()->cascadeOnDelete();
             $table->string('disk', 50)->default('public');        // e.g., 'public' or 's3'
             $table->string('path', 255);                          // storage path
             $table->string('original_filename', 191)->nullable();
@@ -22,7 +21,6 @@ return new class extends Migration
             $table->string('checksum', 64)->nullable();           // sha256
             $table->timestamps();
 
-            $table->index(['transaction_id']);
             $table->index(['checksum']);
         });
     }

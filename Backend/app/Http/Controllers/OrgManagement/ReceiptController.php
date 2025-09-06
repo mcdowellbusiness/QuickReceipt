@@ -54,7 +54,10 @@ class ReceiptController extends Controller
             
             $receipt = $this->receiptService->getReceipt($user, $team, $receipt);
 
-            return response()->json($receipt);
+            return response()->json([
+                'receipt' => $receipt,
+                'url' => $receipt->getUrl(),
+            ]);
         } catch (TeamException $e) {
             return response()->json([
                 'message' => $e->getMessage()
@@ -63,9 +66,9 @@ class ReceiptController extends Controller
     }
 
     /**
-     * Upload a receipt for a transaction
+     * Upload a receipt
      */
-    public function upload(Request $request, Team $team, Transaction $transaction)
+    public function upload(Request $request, Team $team)
     {
         try {
             $user = Auth::user();
@@ -74,11 +77,12 @@ class ReceiptController extends Controller
                 'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             ]);
 
-            $receipt = $this->receiptService->uploadReceipt($user, $team, $transaction, $request->file('file'));
+            $receipt = $this->receiptService->uploadReceipt($user, $team, $request->file('file'));
 
             return response()->json([
                 'message' => 'Receipt uploaded successfully',
                 'receipt' => $receipt,
+                'url' => $receipt->getUrl(),
             ], 201);
         } catch (TeamException $e) {
             return response()->json([
@@ -99,11 +103,12 @@ class ReceiptController extends Controller
                 'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             ]);
 
-            $updatedReceipt = $this->receiptService->replaceReceipt($user, $team, $receipt, $request->file('file'));
+            $receipt = $this->receiptService->replaceReceipt($user, $team, $receipt, $request->file('file'));
 
             return response()->json([
                 'message' => 'Receipt replaced successfully',
-                'receipt' => $updatedReceipt,
+                'receipt' => $receipt,
+                'url' => $receipt->getUrl(),
             ]);
         } catch (TeamException $e) {
             return response()->json([

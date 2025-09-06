@@ -11,6 +11,7 @@ class Transaction extends Model
         'team_id',
         'budget_id',
         'user_id',
+        'receipt_id',
         'type',
         'amount_cents',
         'date',
@@ -55,6 +56,6 @@ class Transaction extends Model
 
     public function receipt()
     {
-        return $this->hasOne(Receipt::class);
+        return $this->belongsTo(Receipt::class);
     }
 }

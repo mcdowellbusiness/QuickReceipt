@@ -23,7 +23,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         
         // Receipt management
         Route::apiResource('receipts', ReceiptController::class)->except(['store', 'update']);
-        Route::post('transactions/{transaction}/receipts', [ReceiptController::class, 'upload']);
+        Route::post('receipts/upload', [ReceiptController::class, 'upload']);
         Route::put('receipts/{receipt}/replace', [ReceiptController::class, 'replace']);
         Route::get('receipts/{receipt}/url', [ReceiptController::class, 'url']);
     });

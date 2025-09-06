@@ -220,32 +220,35 @@ class DatabaseSeeder extends Seeder
             Transaction::create($transactionData);
         }
 
-        // Create sample receipts for some transactions
+        // Create sample receipts first
+        $receipt1 = Receipt::create([
+            'disk' => 'public',
+            'path' => 'receipts/office-depot-001.pdf',
+            'original_filename' => 'office-depot-receipt.pdf',
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 245760,
+            'checksum' => 'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456',
+        ]);
+
+        $receipt3 = Receipt::create([
+            'disk' => 'public',
+            'path' => 'receipts/apple-store-001.pdf',
+            'original_filename' => 'apple-store-receipt.pdf',
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 189440,
+            'checksum' => 'b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567',
+        ]);
+
+        // Update transactions to link to receipts
         $transaction1 = Transaction::where('reference_code', 'TXN-000001')->first();
         $transaction3 = Transaction::where('reference_code', 'TXN-000003')->first();
 
         if ($transaction1) {
-            Receipt::create([
-                'transaction_id' => $transaction1->id,
-                'disk' => 'public',
-                'path' => 'receipts/office-depot-001.pdf',
-                'original_filename' => 'office-depot-receipt.pdf',
-                'mime_type' => 'application/pdf',
-                'size_bytes' => 245760,
-                'checksum' => 'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456',
-            ]);
+            $transaction1->update(['receipt_id' => $receipt1->id]);
         }
 
         if ($transaction3) {
-            Receipt::create([
-                'transaction_id' => $transaction3->id,
-                'disk' => 'public',
-                'path' => 'receipts/apple-store-001.pdf',
-                'original_filename' => 'apple-store-receipt.pdf',
-                'mime_type' => 'application/pdf',
-                'size_bytes' => 189440,
-                'checksum' => 'b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567',
-            ]);
+            $transaction3->update(['receipt_id' => $receipt3->id]);
         }
     }
 }

@@ -85,46 +85,33 @@ class ReceiptService
     }
 
     /**
-     * Upload a receipt for a transaction
+     * Upload a receipt (creates receipt first, then can be linked to transaction)
      */
-    public function uploadReceipt(User $user, Team $team, Transaction $transaction, UploadedFile $file): Receipt
+    public function uploadReceipt(User $user, Team $team, UploadedFile $file): Receipt
     {
         // Check if user has access to this team
         if (!$this->authService->hasTeamAccess($user, $team)) {
             throw new TeamException('You do not have access to this team', 403);
         }
 
-        // Verify transaction belongs to team
-        if ($transaction->team_id !== $team->id) {
-            throw new TeamException('Transaction does not belong to this team', 404);
-        }
-
-        // Check if user can upload receipt for this transaction
-        if (!$this->canUploadReceipt($user, $team, $transaction)) {
-            throw new TeamException('You can only upload receipts for your own transactions', 403);
-        }
-
         // Validate file
         $this->validateReceiptFile($file);
 
-        return DB::transaction(function () use ($transaction, $file) {
+        return DB::transaction(function () use ($file) {
             // Store the file
             $fileRecord = $this->fileStorageService->store($file, 'receipts');
 
-            // Create or update receipt record
-            $receipt = Receipt::updateOrCreate(
-                ['transaction_id' => $transaction->id],
-                [
-                    'disk' => 'public', // Will be updated by file storage service
-                    'path' => $fileRecord->path,
-                    'original_filename' => $fileRecord->name,
-                    'mime_type' => $fileRecord->mimetype,
-                    'size_bytes' => $fileRecord->size,
-                    'checksum' => hash_file('sha256', $file->getRealPath()),
-                ]
-            );
+            // Create receipt record
+            $receipt = Receipt::create([
+                'disk' => 'public', // Will be updated by file storage service
+                'path' => $fileRecord->path,
+                'original_filename' => $fileRecord->name,
+                'mime_type' => $fileRecord->mimetype,
+                'size_bytes' => $fileRecord->size,
+                'checksum' => hash_file('sha256', $file->getRealPath()),
+            ]);
 
-            return $receipt->load(['transaction.user', 'transaction.category', 'transaction.budget']);
+            return $receipt;
         });
     }
 
