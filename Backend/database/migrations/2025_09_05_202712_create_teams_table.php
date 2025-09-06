@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('org_id')->constrained('orgs');
             $table->string('name');
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

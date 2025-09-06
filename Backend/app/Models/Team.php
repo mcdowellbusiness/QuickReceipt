@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Team extends Model
 {
+    protected $fillable = [
+        'org_id',
+        'name',
+        'description',
+    ];
+
     public function org()
     {
         return $this->belongsTo(Org::class);

@@ -2,103 +2,80 @@
 
 namespace App\Http\Controllers\OrgManagement;
 
+use App\Exceptions\TeamException;
 use App\Http\Controllers\Controller;
 use App\Models\Team;
-use App\Models\TeamMember;
-use App\Models\User;
+use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class TeamController extends Controller
 {
+    protected $teamService;
+
+    public function __construct(TeamService $teamService)
+    {
+        $this->teamService = $teamService;
+    }
     /**
      * Create a new team for the authenticated user's organization
      */
     public function store(Request $request)
     {
-        $user = Auth::user();
-        
-        // Get user's organization (assuming they're admin of one org)
-        $orgMembership = $user->orgMemberships()
-            ->where('global_role', 'admin')
-            ->with('org')
-            ->first();
+        try {
+            $user = $request->user();
+            
+            // Validate the request data
+            $validatedData = $this->teamService->validateTeamData($request->all());
+            
+            // Create the team using the service
+            $team = $this->teamService->createTeam($user, $validatedData);
 
-        if (!$orgMembership) {
             return response()->json([
-                'message' => 'You must be an organization admin to create teams'
-            ], 403);
+                'message' => 'Team created successfully',
+                'team' => $team,
+            ], 201);
+        } catch (TeamException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], $e->getStatusCode());
         }
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-        ]);
-
-        $team = Team::create([
-            'org_id' => $orgMembership->org_id,
-            'name' => $request->name,
-            'description' => $request->description,
-        ]);
-
-        // Add the creator as admin of the team
-        TeamMember::create([
-            'team_id' => $team->id,
-            'user_id' => $user->id,
-            'team_role' => 'admin',
-        ]);
-
-        return response()->json([
-            'message' => 'Team created successfully',
-            'team' => $team->load('members.user'),
-        ], 201);
     }
 
     /**
      * List all teams for the authenticated user's organization
      */
-    public function index()
+    public function index(Request $request)
     {
-        $user = Auth::user();
-        
-        $orgMembership = $user->orgMemberships()
-            ->where('global_role', 'admin')
-            ->with('org')
-            ->first();
+        try {
+            $user = $request->user();
+            
+            $teams = $this->teamService->getAllTeams($user);
 
-        if (!$orgMembership) {
+            return response()->json($teams);
+        } catch (TeamException $e) {
             return response()->json([
-                'message' => 'You must be an organization admin to view teams'
-            ], 403);
+                'message' => $e->getMessage()
+            ], $e->getStatusCode());
         }
-
-        $teams = Team::where('org_id', $orgMembership->org_id)
-            ->with('members.user')
-            ->get();
-
-        return response()->json($teams);
     }
 
     /**
      * Show a specific team
      */
-    public function show(Team $team)
+    public function show(Request $request, Team $team)
     {
-        $user = Auth::user();
-        
-        // Check if user has access to this team
-        $hasAccess = $user->teamMemberships()
-            ->where('team_id', $team->id)
-            ->exists();
+        try {
+            $user = $request->user();
+            
+            $teamDetails = $this->teamService->getTeamDetails($user, $team);
 
-        if (!$hasAccess) {
+            return response()->json($teamDetails);
+        } catch (TeamException $e) {
             return response()->json([
-                'message' => 'You do not have access to this team'
-            ], 403);
+                'message' => $e->getMessage()
+            ], $e->getStatusCode());
         }
-
-        return response()->json($team->load('members.user', 'budgets', 'transactions'));
     }
 
     /**
@@ -106,56 +83,44 @@ class TeamController extends Controller
      */
     public function update(Request $request, Team $team)
     {
-        $user = Auth::user();
-        
-        // Check if user is admin of this team
-        $isTeamAdmin = $user->teamMemberships()
-            ->where('team_id', $team->id)
-            ->where('team_role', 'admin')
-            ->exists();
+        try {
+            $user = $request->user();
+            
+            // Validate the request data
+            $validatedData = $this->teamService->validateTeamData($request->all(), true);
+            
+            // Update the team using the service
+            $updatedTeam = $this->teamService->updateTeam($user, $team, $validatedData);
 
-        if (!$isTeamAdmin) {
             return response()->json([
-                'message' => 'You must be a team admin to update this team'
-            ], 403);
+                'message' => 'Team updated successfully',
+                'team' => $updatedTeam,
+            ]);
+        } catch (TeamException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], $e->getStatusCode());
         }
-
-        $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-        ]);
-
-        $team->update($request->only(['name', 'description']));
-
-        return response()->json([
-            'message' => 'Team updated successfully',
-            'team' => $team->load('members.user'),
-        ]);
     }
 
     /**
      * Delete a team (only team admins)
      */
-    public function destroy(Team $team)
+    public function destroy(Request $request, Team $team)
     {
-        $user = Auth::user();
-        
-        // Check if user is admin of this team
-        $isTeamAdmin = $user->teamMemberships()
-            ->where('team_id', $team->id)
-            ->where('team_role', 'admin')
-            ->exists();
+        try {
+            $user = $request->user();
+            
+            // Delete the team using the service
+            $this->teamService->deleteTeam($user, $team);
 
-        if (!$isTeamAdmin) {
             return response()->json([
-                'message' => 'You must be a team admin to delete this team'
-            ], 403);
+                'message' => 'Team deleted successfully'
+            ]);
+        } catch (TeamException $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], $e->getStatusCode());
         }
-
-        $team->delete();
-
-        return response()->json([
-            'message' => 'Team deleted successfully'
-        ]);
     }
 }
