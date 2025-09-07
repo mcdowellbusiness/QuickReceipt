@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ScreenSize } from '../types';
+import type { ScreenSize } from '../types';
 
 interface Breakpoints {
   xs: number;

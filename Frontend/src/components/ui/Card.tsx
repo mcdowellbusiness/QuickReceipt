@@ -1,5 +1,5 @@
 import React from 'react';
-import { BaseComponentProps } from '../../types';
+import type { BaseComponentProps } from '../../types';
 import { cn } from '../../utils/cn';
 
 interface CardProps extends BaseComponentProps {

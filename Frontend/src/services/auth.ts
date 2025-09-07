@@ -1,10 +1,10 @@
 import apiService from './api';
-import { User, LoginForm, RegisterForm, AuthState } from '../types';
+import type { User, LoginForm, RegisterForm, AuthState } from '../types';
 
 class AuthService {
   // Login user
   async login(credentials: LoginForm): Promise<{ user: User; token: string }> {
-    const response = await apiService.post<{ user: User; token: string }>('/auth/login', credentials);
+    const response = await apiService.post<{ user: User; token: string }>('/login', credentials);
     
     if (response.success && response.data) {
       apiService.setAuthToken(response.data.token);
@@ -17,7 +17,7 @@ class AuthService {
 
   // Register user
   async register(userData: RegisterForm): Promise<{ user: User; token: string }> {
-    const response = await apiService.post<{ user: User; token: string }>('/auth/register', userData);
+    const response = await apiService.post<{ user: User; token: string }>('/register', userData);
     
     if (response.success && response.data) {
       apiService.setAuthToken(response.data.token);
@@ -31,7 +31,7 @@ class AuthService {
   // Logout user
   async logout(): Promise<void> {
     try {
-      await apiService.post('/auth/logout');
+      await apiService.post('/logout');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -41,7 +41,7 @@ class AuthService {
 
   // Get current user
   async getCurrentUser(): Promise<User> {
-    const response = await apiService.get<User>('/auth/user');
+    const response = await apiService.get<User>('/user');
     
     if (response.success && response.data) {
       localStorage.setItem('user', JSON.stringify(response.data));
@@ -53,7 +53,7 @@ class AuthService {
 
   // Refresh token
   async refreshToken(): Promise<{ token: string }> {
-    const response = await apiService.post<{ token: string }>('/auth/refresh');
+    const response = await apiService.post<{ token: string }>('/refresh');
     
     if (response.success && response.data) {
       apiService.setAuthToken(response.data.token);
@@ -96,7 +96,7 @@ class AuthService {
 
   // Verify email
   async verifyEmail(token: string): Promise<void> {
-    const response = await apiService.post('/auth/verify-email', { token });
+    const response = await apiService.post('/verify-email', { token });
     
     if (!response.success) {
       throw new Error('Email verification failed');
@@ -105,7 +105,7 @@ class AuthService {
 
   // Resend verification email
   async resendVerificationEmail(): Promise<void> {
-    const response = await apiService.post('/auth/email/verification-notification');
+    const response = await apiService.post('/email/verification-notification');
     
     if (!response.success) {
       throw new Error('Failed to resend verification email');
@@ -114,7 +114,7 @@ class AuthService {
 
   // Request password reset
   async requestPasswordReset(email: string): Promise<void> {
-    const response = await apiService.post('/auth/forgot-password', { email });
+    const response = await apiService.post('/forgot-password', { email });
     
     if (!response.success) {
       throw new Error('Failed to request password reset');
@@ -123,7 +123,7 @@ class AuthService {
 
   // Reset password
   async resetPassword(token: string, email: string, password: string, passwordConfirmation: string): Promise<void> {
-    const response = await apiService.post('/auth/reset-password', {
+    const response = await apiService.post('/reset-password', {
       token,
       email,
       password,

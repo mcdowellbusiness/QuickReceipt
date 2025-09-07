@@ -1,6 +1,6 @@
 import React from 'react';
 import { useResponsive } from '../../hooks/useResponsive';
-import { BaseComponentProps } from '../../types';
+import type { BaseComponentProps } from '../../types';
 import { cn } from '../../utils/cn';
 
 interface ResponsiveLayoutProps extends BaseComponentProps {
