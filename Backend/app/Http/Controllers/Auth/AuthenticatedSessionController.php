@@ -21,8 +21,12 @@ class AuthenticatedSessionController extends Controller
         $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
-            'token' => $token,
+            'data' => [
+                'user' => $user,
+                'token' => $token,
+            ],
+            'success' => true,
+            'message' => 'Login successful',
         ]);
     }
 
